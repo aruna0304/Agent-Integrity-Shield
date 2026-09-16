@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AIS Unified Agent Trajectory",
+  "description": "A source-traceable, normalized record for agent-safety benchmark cases and trajectories.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "trajectory_id",
+    "source_dataset",
+    "status",
+    "task_context",
+    "domain",
+    "actions",
+    "risk_taxonomy",
+    "expected_achievements",
+    "underspecifications",
+    "ground_truth_label",
+    "raw_source_ref"
+  ],
+  "properties": {
+    "trajectory_id": {"type": "string", "minLength": 1},
+    "source_dataset": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "enum": ["scenario_only", "executed_trajectory"]},
+    "task_context": {"type": "string"},
+    "domain": {
+      "type": "string",
+      "enum": ["file_operations", "financial_transactions", "communication"]
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["step_index", "tool_name", "tool_input", "lifecycle_stage", "tool_output"],
+        "properties": {
+          "step_index": {"type": "integer", "minimum": 0},
+          "tool_name": {"type": "string", "minLength": 1},
+          "tool_input": {"type": "object"},
+          "lifecycle_stage": {
+            "type": "string",
+            "enum": ["pre_execution", "execution", "post_execution"]
+          },
+          "tool_output": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "risk_taxonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["potential_risky_actions", "potential_risky_outcomes"],
+      "properties": {
+        "potential_risky_actions": {"type": "array", "items": {"type": "string"}},
+        "potential_risky_outcomes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "expected_achievements": {"type": "array", "items": {"type": "string"}},
+    "underspecifications": {"type": "object"},
+    "ground_truth_label": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["is_failure", "failure_category", "severity", "source_annotation", "note"],
+      "properties": {
+        "is_failure": {"type": ["boolean", "null"]},
+        "failure_category": {
+          "type": ["string", "null"],
+          "enum": [
+            "hallucinated_tool_call",
+            "unauthorized_intent",
+            "tool_failure",
+            "wrong_parameters",
+            "silent_failure",
+            "no_verification",
+            null
+          ]
+        },
+        "severity": {"type": ["string", "null"], "enum": ["low", "medium", "high", null]},
+        "source_annotation": {"type": "string"},
+        "note": {"type": "string"}
+      }
+    },
+    "raw_source_ref": {"type": "string", "minLength": 1}
+  }
+}

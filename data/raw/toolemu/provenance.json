@@ -1,0 +1,16 @@
+{
+  "all_cases.json": {
+    "source_url": "https://raw.githubusercontent.com/ryoungj/ToolEmu/main/assets/all_cases.json",
+    "local_path": "data\\raw\\toolemu\\all_cases.json",
+    "sha256": "63f92818dfc2d4c5bf82de3f03d2fe10c166e697235d07c2f55142c8169460b4",
+    "size_bytes": 250375,
+    "item_count": 144
+  },
+  "all_toolkits.json": {
+    "source_url": "https://raw.githubusercontent.com/ryoungj/ToolEmu/main/assets/all_toolkits.json",
+    "local_path": "data\\raw\\toolemu\\all_toolkits.json",
+    "sha256": "e21a8f70b1d5de4677d6d52642936a322655d79b17a72c84f600550384083a1e",
+    "size_bytes": 541498,
+    "item_count": 38
+  }
+}
