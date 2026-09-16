@@ -24,19 +24,19 @@ The official Agent-SafetyBench release is maintained by the authors at [thu-coai
 
 Different agent-safety benchmarks describe their data differently. `schema/trajectory_schema.json` makes every accepted record answer the same questions: what was the task, which domain was involved, which actions occurred, what did the source label, and where did the record originate? That common structure lets downstream AIS components work with ToolEmu, Agent-SafetyBench, R-Judge, and AgentHarm without dataset-specific logic.
 
-## Execution Pipeline (ToolEmu)
+## Execution Pipeline (ToolEmu — Team A)
 
-From the `Prj` root directory:
+From the project root directory:
 
 1. **Step 1: Download & Verify Provenance**
    ```powershell
-   python ais/scripts/download_toolemu.py
+   python scripts/download_toolemu.py
    ```
    Downloads official ToolEmu files (`all_cases.json`, `all_toolkits.json`) and writes cryptographic SHA-256 provenance to `data/raw/toolemu/provenance.json`.
 
 2. **Step 2: Filter Domains & Normalize Scenarios**
    ```powershell
-   python ais/scripts/preprocess_toolemu.py
+   python scripts/preprocess_toolemu.py
    ```
    Filters the 144 raw cases down to the 3 locked domains (`file_operations`, `financial_transactions`, `communication`), validates against `schema/trajectory_schema.json`, and writes `data/processed/toolemu_normalized.jsonl`.
 
@@ -44,13 +44,37 @@ From the `Prj` root directory:
    Set your API key in the environment (PowerShell):
    ```powershell
    $env:GOOGLE_API_KEY = "your-api-key-here"
-   python ais/scripts/generate_trajectories_toolemu.py --all
+   python scripts/generate_trajectories_toolemu.py --all
    ```
    Simulates multi-turn agent tool executions against emulated tool environments and applies the Safety Judge to classify trajectories into the 6 AIS failure categories with severity ratings, outputting to `data/processed/toolemu_executed.jsonl` with full raw API logs in `data/processed/toolemu_api_audit.jsonl`.
 
+## Execution Pipeline (Agent-SafetyBench — Team B)
+
+From the project root directory:
+
+1. **Step 1: Download & Verify Provenance**
+   ```powershell
+   python scripts/download_agentsafetybench.py
+   ```
+   Verifies the official release file (`released_data.json`) and writes cryptographic SHA-256 provenance to `data/raw/agentsafetybench/provenance.json`.
+
+2. **Step 2: Filter Domains & Normalize Scenarios**
+   ```powershell
+   python scripts/preprocess_agentsafetybench.py
+   ```
+   Scans all 2,000 cases, performs preflight raw structure validation (confirming absence of pre-existing traces/verdicts), filters strictly into the 3 locked domains (`file_operations`, `financial_transactions`, `communication`), validates against `schema/trajectory_schema.json`, and writes 116 clean normalized cases to `data/processed/agentsafetybench_normalized.jsonl`.
+
+3. **Step 3: Trajectory Generation & Safety Evaluation Harness**
+   Run with live LLM API keys (`$env:GOOGLE_API_KEY` or `$env:OPENAI_API_KEY`) or in high-fidelity deterministic simulation mode:
+   ```powershell
+   # Live LLM API or high-fidelity simulation
+   python scripts/generate_trajectories_agentsafetybench.py --limit 6
+   ```
+   Executes the multi-role agent simulation (Agent Actor -> Tool Sandbox Emulator -> Safety Judge), validates output against `schema/trajectory_schema.json`, logs all raw prompts and responses to `data/processed/agentsafetybench_api_audit.jsonl`, and outputs executed trajectories to `data/processed/agentsafetybench_executed.jsonl`.
+
 ## Next Steps
 
-- Normalize and generate executed trajectories for Agent-SafetyBench.
 - Build the Detection Layer (LLM-as-a-Judge interceptor).
 - Build the Recovery Engine state machine.
+- Integrate the Audit Dashboard.
 
