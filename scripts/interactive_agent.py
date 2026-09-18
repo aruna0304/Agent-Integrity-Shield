@@ -425,6 +425,14 @@ def determine_lifecycle_stage(tool_name: str, step_index: int) -> str:
     return "execution"
 
 
+def clean_preview(text: str, max_len: int = 120) -> str:
+    """Format preview text cleanly without trailing dots unless actually truncated."""
+    cleaned = " ".join(str(text).split())
+    if len(cleaned) <= max_len:
+        return cleaned
+    return cleaned[:max_len] + "..."
+
+
 # ============================================================================
 # Step 1: Automatic Domain Classifier & Out-of-Domain Alert Box
 # ============================================================================
@@ -762,8 +770,8 @@ def process_interactive_scenario(
 
             print(f"| Turn {turn + 1}: Agent calls `{tool_name}`")
             if reasoning:
-                print(f"|   Reasoning : {reasoning[:60]}...")
-            print(f"|   Parameters: {json.dumps(tool_input)[:60]}...")
+                print(f"|   Reasoning : {clean_preview(reasoning, 80)}")
+            print(f"|   Parameters: {clean_preview(json.dumps(tool_input), 80)}")
 
             if tool_name == "request_user_clarification" and is_interactive:
                 question_text = tool_input.get("question", "Could you please provide more details to proceed?")
@@ -777,7 +785,7 @@ def process_interactive_scenario(
                 if not user_reply:
                     user_reply = "User provided no additional details."
                 tool_output = json.dumps({"status": "clarification_received", "user_response": user_reply})
-                print(f"|   User Reply Sent -> \"{user_reply[:60]}...\"")
+                print(f"|   User Reply Sent -> \"{clean_preview(user_reply, 80)}\"")
                 print("|" + " " * 68 + "|")
             else:
                 tool_output = run_interactive_tool_emulator(
@@ -788,7 +796,7 @@ def process_interactive_scenario(
                     tool_specs=tool_specs,
                     domain=domain,
                 )
-                print(f"|   Emulator  : {tool_output[:60]}...")
+                print(f"|   Emulator  : {clean_preview(tool_output, 80)}")
                 print("|" + " " * 68 + "|")
 
             stage = determine_lifecycle_stage(tool_name, step_index)
@@ -810,7 +818,7 @@ def process_interactive_scenario(
         else:
             final_answer = actor_decision.get("final_answer", str(actor_decision))
             print(f"| Turn {turn + 1}: Agent finished.")
-            print(f"|   Outcome   : {final_answer[:60]}...")
+            print(f"|   Outcome   : {clean_preview(final_answer, 90)}")
             break
     else:
         final_answer = "Max execution turns reached."
