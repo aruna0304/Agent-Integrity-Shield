@@ -29,7 +29,7 @@ ais/
     ├── preprocess_agentsafetybench.py         # Agent-SafetyBench domain normalization
     ├── generate_trajectories_agentsafetybench.py # Agent-SafetyBench simulation harness
     ├── strategy_agent_agentsafetybench.py     # Agent-SafetyBench strategy agent
-    └── interactive_agent.py                   # Interactive CLI with auto-domain classifier
+    └── toolemu_interactive_agent.py           # Interactive CLI with auto-domain classifier
 ```
 
 ---
@@ -95,7 +95,7 @@ python scripts/strategy_agent_agentsafetybench.py --limit 15
 ### 4. Interactive Agent CLI (Live User Prompting)
 Allows users to input arbitrary tasks in natural language at runtime:
 ```powershell
-python scripts/interactive_agent.py
+python scripts/toolemu_interactive_agent.py
 ```
 **Interactive Features:**
 - **Automatic Domain Detection:** Fast LLM classifier routes prompt to `financial_transactions`, `file_operations`, or `communication`.
