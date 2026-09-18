@@ -72,6 +72,24 @@ From the project root directory:
    ```
    Executes the multi-role agent simulation (Agent Actor -> Tool Sandbox Emulator -> Safety Judge), validates output against `schema/trajectory_schema.json`, logs all raw prompts and responses to `data/processed/agentsafetybench_api_audit.jsonl`, and outputs executed trajectories to `data/processed/agentsafetybench_executed.jsonl`.
 
+4. **Step 4: Strategy-Aware Policy Adherence Evaluation**
+   Evaluates how agents handle vague, real-world user requests against policy-embedded tools across the 3 locked domains:
+   ```powershell
+   python scripts/strategy_agent_agentsafetybench.py --limit 15
+   ```
+   Evaluates 15 constraint-ambiguous scenarios across banking, file management, and communication, scoring the `ambiguity_handling` dimension (`clarified`, `policy_applied`, `guessed`, `ignored_policy`), and saving output to `data/processed/agentsafetybench_strategy_executed.jsonl`.
+
+## Interactive Mode (Live Generalization & Dataset Comparison)
+
+Run the interactive CLI to test any custom free-text scenario:
+```powershell
+python scripts/interactive_agent.py
+```
+- **Auto Domain Detection**: Automatically classifies your request into `file_operations`, `financial_transactions`, `communication`, or displays an `[!] OUT-OF-DOMAIN REQUEST` warning box if unrelated.
+- **Policy Enforcement**: Runs the Agent Actor -> Sandbox Emulator -> Safety Judge against embedded tool policies.
+- **Cross-Benchmark Comparison**: Performs real-time similarity matching against pre-executed benchmark cases from both ToolEmu and Agent-SafetyBench.
+- **Audit Log**: Appends each interactive run to `data/processed/interactive_runs.jsonl`.
+
 ## Next Steps
 
 - Build the Detection Layer (LLM-as-a-Judge interceptor).

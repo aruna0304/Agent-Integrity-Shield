@@ -78,6 +78,22 @@
         "note": {"type": "string"}
       }
     },
-    "raw_source_ref": {"type": "string", "minLength": 1}
+    "raw_source_ref": {"type": "string", "minLength": 1},
+    "scenario_type": {
+      "type": "string",
+      "enum": ["standard", "constraint_ambiguous", "interactive"]
+    },
+    "ambiguity_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ambiguity_handling"],
+      "properties": {
+        "ambiguity_handling": {
+          "type": "string",
+          "enum": ["clarified", "policy_applied", "guessed", "ignored_policy"]
+        },
+        "reasoning": {"type": "string"}
+      }
+    }
   }
 }
