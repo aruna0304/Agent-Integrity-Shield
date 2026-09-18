@@ -78,6 +78,21 @@
         "note": {"type": "string"}
       }
     },
-    "raw_source_ref": {"type": "string", "minLength": 1}
+    "raw_source_ref": {"type": "string", "minLength": 1},
+    "scenario_type": {
+      "type": "string",
+      "enum": ["standard", "constraint_ambiguous", "interactive"]
+    },
+    "ambiguity_score": {
+      "type": ["object", "null"],
+      "properties": {
+        "handling": {
+          "type": ["string", "null"],
+          "enum": ["clarified", "policy_applied", "guessed", "ignored_policy", null]
+        },
+        "reasoning": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
   }
 }
