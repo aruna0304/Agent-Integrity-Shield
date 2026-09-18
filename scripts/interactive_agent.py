@@ -9,11 +9,13 @@ Features:
    is outside the supported domains.
 3. Autonomous Decision Making: The agent plans its own tool calls and applies governance
    policies dynamically from tool specifications without following pre-scripted dataset steps.
-4. Zero Dataset Re-runs: Loads pre-executed records once into memory (read-only, ~1ms) and
+4. Human-in-the-Loop Clarification: When a prompt is ambiguous or lacks parameters, the agent
+   prompts the user live for follow-up details in the terminal.
+5. Zero Dataset Re-runs: Loads pre-executed records once into memory (read-only, ~1ms) and
    only executes the single user-entered scenario.
-5. Side-by-Side Dataset Comparison: Finds and displays the most relevant pre-executed
-   scenario from the dataset to compare clean vs. real-world execution.
-6. Schema Validation & Audit: Validates runs against trajectory_schema.json and appends
+6. Side-by-Side Dataset Comparison: Finds and displays the most relevant pre-executed
+   scenario from ToolEmu and Agent-SafetyBench to compare clean vs. real-world execution.
+7. Schema Validation & Audit: Validates runs against trajectory_schema.json and appends
    to interactive_runs.jsonl and toolemu_api_audit.jsonl.
 """
 
@@ -34,8 +36,9 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_FILE = PROJECT_ROOT / "schema" / "trajectory_schema.json"
-DATASET_EXECUTED_FILE = PROJECT_ROOT / "data" / "processed" / "toolemu_executed.jsonl"
+TOOLEMU_EXECUTED_FILE = PROJECT_ROOT / "data" / "processed" / "toolemu_executed.jsonl"
 STRATEGY_EXECUTED_FILE = PROJECT_ROOT / "data" / "processed" / "strategy_scenarios_executed.jsonl"
+ASB_EXECUTED_FILE = PROJECT_ROOT / "data" / "processed" / "agentsafetybench_executed.jsonl"
 INTERACTIVE_OUTPUT_FILE = PROJECT_ROOT / "data" / "processed" / "interactive_runs.jsonl"
 AUDIT_FILE = PROJECT_ROOT / "data" / "processed" / "toolemu_api_audit.jsonl"
 
@@ -478,7 +481,8 @@ def print_out_of_domain_alert(user_input: str) -> None:
     print("|    2. file_operations         (log cleanup, configs, backups)       |")
     print("|    3. communication           (incident alerts, team messaging)     |")
     print("|                                                                    |")
-    print(f"|  Your prompt: \"{user_input[:48]}...\"" + " " * max(0, 67 - len(user_input[:48]) - 19) + "|")
+    prompt_snippet = clean_preview(user_input, 48)
+    print(f"|  Your prompt: \"{prompt_snippet}\"" + " " * max(0, 67 - len(prompt_snippet) - 16) + "|")
     print("|  does not match any supported domain.                              |")
     print("|                                                                    |")
     print("|  Please enter a task related to one of the 3 domains above.        |")
@@ -685,7 +689,7 @@ def run_interactive_safety_judge(
 def load_reference_dataset() -> list[dict[str, Any]]:
     """Loads pre-executed dataset trajectories once at startup as read-only reference."""
     records: list[dict[str, Any]] = []
-    for file_path in (DATASET_EXECUTED_FILE, STRATEGY_EXECUTED_FILE):
+    for file_path in (TOOLEMU_EXECUTED_FILE, STRATEGY_EXECUTED_FILE, ASB_EXECUTED_FILE):
         if file_path.exists():
             with file_path.open("r", encoding="utf-8") as f:
                 for line in f:
@@ -857,7 +861,7 @@ def process_interactive_scenario(
         ref_verdict = "FAIL" if closest_match.get("ground_truth_label", {}).get("is_failure") else "PASS"
         ref_cat = closest_match.get("ground_truth_label", {}).get("failure_category", "None")
         print("  DATASET BENCHMARK COMPARISON (Reference Benchmark Case):")
-        print(f"  Closest Dataset Case : [{ref_id}] \"{ref_task[:55]}...\"")
+        print(f"  Closest Dataset Case : [{ref_id}] \"{clean_preview(ref_task, 55)}\"")
         print(f"  Dataset Outcome      : [{ref_verdict}] (Category: {ref_cat})")
         print(f"  Comparison Insight   : Interactive real-world prompt evaluated dynamically against")
         print(f"                         policy rules while preserving dataset traceability.")
@@ -936,7 +940,7 @@ def main() -> None:
     schema = load_schema(SCHEMA_FILE)
     client = LLMClient(provider=args.provider, model=args.model, api_key=api_key, audit_path=AUDIT_FILE)
 
-    # Load 43 pre-run cases into memory (0 API calls, ~1ms)
+    # Load pre-run cases into memory (0 API calls, ~1ms)
     reference_records = load_reference_dataset()
 
     print("\n" + "=" * 70)

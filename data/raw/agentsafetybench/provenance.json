@@ -1,0 +1,9 @@
+{
+  "released_data.json": {
+    "source_url": "https://huggingface.co/datasets/thu-coai/Agent-SafetyBench/resolve/main/released_data.json?download=true",
+    "local_path": "data\\raw\\agentsafetybench\\released_data.json",
+    "sha256": "61c147ca0a783121a4a5f865d635fdaaa8b8a5a3421a09c9fac13f4953fcf3fa",
+    "size_bytes": 2941592,
+    "item_count": 2000
+  }
+}

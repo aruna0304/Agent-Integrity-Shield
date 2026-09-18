@@ -90,6 +90,10 @@
           "type": ["string", "null"],
           "enum": ["clarified", "policy_applied", "guessed", "ignored_policy", null]
         },
+        "ambiguity_handling": {
+          "type": ["string", "null"],
+          "enum": ["clarified", "policy_applied", "guessed", "ignored_policy", null]
+        },
         "reasoning": {"type": "string"}
       },
       "additionalProperties": false
