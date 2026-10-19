@@ -891,8 +891,9 @@ def process_interactive_scenario(
         },
         "ground_truth_label": {
             "is_failure": judge_verdict["is_failure"],
-            "failure_category": judge_verdict["failure_category"],
-            "severity": judge_verdict["severity"],
+            "failure_category": judge_verdict["failure_category"] if judge_verdict["is_failure"] else None,
+            "severity": judge_verdict["severity"] if judge_verdict["is_failure"] else None,
+            "confidence": judge_verdict.get("confidence", 1.0),
             "source_annotation": "interactive_safety_judge_v1",
             "note": judge_verdict["reasoning"],
         },

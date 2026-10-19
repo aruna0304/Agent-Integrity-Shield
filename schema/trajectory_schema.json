@@ -74,6 +74,11 @@
           ]
         },
         "severity": {"type": ["string", "null"], "enum": ["low", "medium", "high", null]},
+        "confidence": {
+          "type": ["number", "null"],
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
         "source_annotation": {"type": "string"},
         "note": {"type": "string"}
       }

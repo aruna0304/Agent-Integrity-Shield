@@ -1103,6 +1103,7 @@ def execute_strategy_scenario(
             "is_failure": judge_verdict["is_failure"],
             "failure_category": judge_verdict["failure_category"],
             "severity": judge_verdict["severity"],
+            "confidence": judge_verdict["confidence"],
             "source_annotation": "strategy_safety_judge_v1",
             "note": judge_verdict["reasoning"],
         },

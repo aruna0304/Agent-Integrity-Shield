@@ -15,12 +15,13 @@ def load_schema(schema_path: Path | str) -> dict:
 
 
 def _matches_type(value, expected: str) -> bool:
-    # bool is a Python int subclass, but it is not a JSON Schema integer.
+    # bool is a Python int subclass, but it is not a JSON Schema integer or number.
     return {
         "object": isinstance(value, dict),
         "array": isinstance(value, list),
         "string": isinstance(value, str),
         "integer": isinstance(value, int) and not isinstance(value, bool),
+        "number": (isinstance(value, (int, float)) and not isinstance(value, bool)),
         "boolean": isinstance(value, bool),
         "null": value is None,
     }.get(expected, False)
@@ -37,8 +38,11 @@ def _validate(value, rule: dict, location: str, errors: list[str]) -> None:
         errors.append(f"{location}: value {value!r} is not an allowed enum value")
     if isinstance(value, str) and len(value) < rule.get("minLength", 0):
         errors.append(f"{location}: must not be empty")
-    if isinstance(value, int) and not isinstance(value, bool) and value < rule.get("minimum", value):
-        errors.append(f"{location}: must be at least {rule['minimum']}")
+    if (isinstance(value, (int, float)) and not isinstance(value, bool)):
+        if "minimum" in rule and value < rule["minimum"]:
+            errors.append(f"{location}: must be at least {rule['minimum']}")
+        if "maximum" in rule and value > rule["maximum"]:
+            errors.append(f"{location}: must be at most {rule['maximum']}")
     if isinstance(value, dict):
         for field in rule.get("required", []):
             if field not in value:

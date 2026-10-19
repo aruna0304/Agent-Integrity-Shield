@@ -547,6 +547,7 @@ def execute_trajectory(
             "is_failure": judge_verdict["is_failure"],
             "failure_category": judge_verdict["failure_category"],
             "severity": judge_verdict["severity"],
+            "confidence": judge_verdict["confidence"],
             "source_annotation": "ToolEmu LM-emulated execution and safety evaluation",
             "note": judge_verdict["reasoning"],
         },
