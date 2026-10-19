@@ -1122,9 +1122,46 @@ def main() -> None:
     parser.add_argument("--provider", default="gemini", help="API provider (gemini, openai, anthropic).")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of scenarios to run (e.g. 3).")
     parser.add_argument("--domain", choices=["financial_transactions", "file_operations", "communication"], default=None, help="Filter by domain.")
+    parser.add_argument("--output", default=None, help="Output JSONL file path (default: strategy_scenarios_executed.jsonl or <name>_limit<N>.jsonl when --limit is used).")
+    parser.add_argument("--force", action="store_true", help="Force overwrite even if existing output file has more records")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate run and verify output destination without making LLM API calls")
     parser.add_argument("--delay", type=float, default=0.5, help="Delay (s) between API calls to avoid rate limits.")
     parser.add_argument("--max-turns", type=int, default=5, help="Max interaction turns per scenario.")
     args = parser.parse_args()
+
+    # Filter scenarios
+    scenarios = STRATEGY_SCENARIOS
+    if args.domain:
+        scenarios = [s for s in scenarios if s["domain"] == args.domain]
+    if args.limit:
+        scenarios = scenarios[: args.limit]
+
+    # Determine Output File Path
+    if args.output:
+        out_path = Path(args.output)
+    elif args.limit:
+        out_path = OUTPUT_FILE.with_name(f"{OUTPUT_FILE.stem}_limit{args.limit}.jsonl")
+    else:
+        out_path = OUTPUT_FILE
+
+    # Overwrite Protection: abort if existing file has more records
+    if out_path.exists():
+        with out_path.open("r", encoding="utf-8") as f:
+            existing_count = sum(1 for line in f if line.strip())
+        if len(scenarios) < existing_count and not args.force:
+            print(f"\n[ERROR] Output file '{out_path}' already exists with {existing_count} records.")
+            print(f"The new run would write only {len(scenarios)} records, which would overwrite a fuller run.")
+            print("Use --force to proceed anyway or specify a different --output file.\n")
+            sys.exit(1)
+
+    if args.dry_run:
+        print("\n" + "=" * 70)
+        print("  [DRY RUN] Strategy Simulation Harness - No LLM calls made.")
+        print(f"  Selected Scenarios : {len(scenarios)}")
+        print(f"  Output Destination : {out_path}")
+        print("  Overwrite protection and destination checks passed successfully.")
+        print("=" * 70 + "\n")
+        return
 
     api_key = (
         os.environ.get("GOOGLE_API_KEY")
@@ -1138,18 +1175,11 @@ def main() -> None:
         print("  $env:GOOGLE_API_KEY = \"your_actual_key_here\"\n")
         sys.exit(1)
 
-    # Filter scenarios
-    scenarios = STRATEGY_SCENARIOS
-    if args.domain:
-        scenarios = [s for s in scenarios if s["domain"] == args.domain]
-    if args.limit:
-        scenarios = scenarios[: args.limit]
-
     print("=" * 70)
     print("  AIS STRATEGY AGENT HARNESS (GRADUATED CONSTRAINT SIMULATION)")
     print(f"  Model: {args.model} | Provider: {args.provider}")
     print(f"  Selected Scenarios: {len(scenarios)}")
-    print(f"  Output File: {OUTPUT_FILE}")
+    print(f"  Output File: {out_path}")
     print("=" * 70)
 
     schema = load_schema(SCHEMA_FILE)
@@ -1190,8 +1220,8 @@ def main() -> None:
         confidences.append(conf)
 
     # Write output JSONL
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with OUTPUT_FILE.open("w", encoding="utf-8") as f:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as f:
         for rec in executed_records:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
@@ -1209,7 +1239,7 @@ def main() -> None:
     print(f"  Ambiguity Handling Breakdown : {dict(handling_counts)}")
     print(f"  Average Judge Confidence     : {avg_conf:.2f}")
     print(f"  Schema Validation Failures   : {schema_errors_count}")
-    print(f"  Output Trajectories Saved    : {OUTPUT_FILE}")
+    print(f"  Output Trajectories Saved    : {out_path}")
     print(f"  Audit Log Updated            : {AUDIT_FILE}")
     print("=" * 70)
 

@@ -581,9 +581,48 @@ def main() -> int:
     parser.add_argument("--max-turns", type=int, default=6, help="Maximum turns per trajectory (default: 6)")
     parser.add_argument("--delay", type=float, default=0.5, help="Delay in seconds between API calls (default: 0.5)")
     parser.add_argument("--input", default=str(NORMALIZED_FILE), help="Input normalized JSONL file")
-    parser.add_argument("--output", default=str(OUTPUT_FILE), help="Output executed JSONL file")
+    parser.add_argument("--output", default=None, help="Output executed JSONL file (default: toolemu_executed.jsonl or <name>_limit<N>.jsonl when --limit is used)")
+    parser.add_argument("--force", action="store_true", help="Force overwrite even if existing output file has more records")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate run and verify output destination without making LLM API calls")
     parser.add_argument("--audit", default=str(AUDIT_FILE), help="Output audit JSONL file")
     args = parser.parse_args()
+
+    # Load data for scenario selection and verification
+    normalized_records = [json.loads(line) for line in Path(args.input).read_text(encoding="utf-8").strip().split("\n")]
+    raw_cases_list = json.loads(ALL_CASES_FILE.read_text(encoding="utf-8"))
+    raw_cases_by_name = {c.get("name", ""): c for c in raw_cases_list if "name" in c}
+    toolkits_list = json.loads(TOOLKITS_FILE.read_text(encoding="utf-8"))
+    toolkits_by_name = {tk["toolkit"]: tk for tk in toolkits_list if "toolkit" in tk}
+    schema = load_schema(SCHEMA_FILE)
+
+    target_records = normalized_records if args.all else select_balanced_sample(normalized_records, args.limit)
+
+    # Determine Output File Path
+    if args.output:
+        out_path = Path(args.output)
+    elif args.limit and not args.all:
+        out_path = OUTPUT_FILE.with_name(f"{OUTPUT_FILE.stem}_limit{args.limit}.jsonl")
+    else:
+        out_path = OUTPUT_FILE
+
+    # Overwrite Protection: abort if existing file has more records
+    if out_path.exists():
+        with out_path.open("r", encoding="utf-8") as f:
+            existing_count = sum(1 for line in f if line.strip())
+        if len(target_records) < existing_count and not args.force:
+            print(f"\n[ERROR] Output file '{out_path}' already exists with {existing_count} records.")
+            print(f"The new run would write only {len(target_records)} records, which would overwrite a fuller run.")
+            print("Use --force to proceed anyway or specify a different --output file.\n")
+            return 1
+
+    if args.dry_run:
+        print("\n" + "=" * 80)
+        print(" [DRY RUN] Simulation mode active - no LLM API calls will be made.")
+        print(f" Target Cases : {len(target_records)} (out of {len(normalized_records)} available)")
+        print(f" Output File  : {out_path}")
+        print(" Overwrite protection and output destination checks passed successfully.")
+        print("=" * 80 + "\n")
+        return 0
 
     # Determine Provider, Model, and API Key strictly from environment
     provider = args.provider
@@ -627,22 +666,13 @@ def main() -> int:
     audit_path = Path(args.audit)
     client = LLMClient(provider=provider, model=model, api_key=api_key, audit_path=audit_path)
 
-    # Load data
-    normalized_records = [json.loads(line) for line in Path(args.input).read_text(encoding="utf-8").strip().split("\n")]
-    raw_cases_list = json.loads(ALL_CASES_FILE.read_text(encoding="utf-8"))
-    raw_cases_by_name = {c.get("name", ""): c for c in raw_cases_list if "name" in c}
-    toolkits_list = json.loads(TOOLKITS_FILE.read_text(encoding="utf-8"))
-    toolkits_by_name = {tk["toolkit"]: tk for tk in toolkits_list if "toolkit" in tk}
-    schema = load_schema(SCHEMA_FILE)
-
-    target_records = normalized_records if args.all else select_balanced_sample(normalized_records, args.limit)
-
     print(f"\n================================================================================")
     print(f" AIS Trajectory Generation & Simulation Harness (Real LLM Calls)")
     print(f" Provider: {provider} | Model: {model}")
     print(f" Target Cases: {len(target_records)} (out of {len(normalized_records)} available)")
     print(f" Audit File: {audit_path.relative_to(PROJECT_ROOT)}")
-    print(f" Output File: {Path(args.output).relative_to(PROJECT_ROOT)}")
+    print(f" Output File: {out_path.relative_to(PROJECT_ROOT)}")
+    print(f"================================================================================")
     print(f"================================================================================")
 
     start_wall_clock = time.perf_counter()
