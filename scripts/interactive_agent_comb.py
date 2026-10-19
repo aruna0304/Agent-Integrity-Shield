@@ -906,10 +906,12 @@ def process_interactive_scenario(
     else:
         print("\n[SCHEMA CHECK] Interactive record validated against trajectory_schema.json [VALID]")
 
-    # Append to interactive_runs.jsonl
+    # Append to interactive_runs.jsonl ensuring no blank lines
     INTERACTIVE_OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with INTERACTIVE_OUTPUT_FILE.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(interactive_record, ensure_ascii=False) + "\n")
+    serialized = json.dumps(interactive_record, ensure_ascii=False).strip()
+    if serialized:
+        with INTERACTIVE_OUTPUT_FILE.open("a", encoding="utf-8") as f:
+            f.write(serialized + "\n")
 
     print(f"[SAVED] Trajectory recorded to: {INTERACTIVE_OUTPUT_FILE}\n")
     return interactive_record

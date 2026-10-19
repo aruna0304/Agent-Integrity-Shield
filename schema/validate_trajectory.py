@@ -65,3 +65,56 @@ def validate_record(record: dict, schema: dict) -> list[str]:
     errors: list[str] = []
     _validate(record, schema, "$", errors)
     return errors
+
+
+def main(argv: list[str] | None = None) -> int:
+    import sys
+    args = argv if argv is not None else sys.argv[1:]
+    if not args or "-h" in args or "--help" in args:
+        print("Usage: python validate_trajectory.py <file1.jsonl> [file2.jsonl ...]")
+        return 0 if ("-h" in args or "--help" in args) else 1
+
+    schema_path = Path(__file__).resolve().parent / "trajectory_schema.json"
+    if not schema_path.exists():
+        print(f"Error: Schema file not found at {schema_path}", file=sys.stderr)
+        return 1
+
+    schema = load_schema(schema_path)
+    total_error_count = 0
+
+    for arg in args:
+        filepath = Path(arg)
+        if not filepath.exists():
+            print(f"{filepath.name}: File not found", file=sys.stderr)
+            total_error_count += 1
+            continue
+
+        errors: list[str] = []
+        with filepath.open("r", encoding="utf-8") as f:
+            for line_no, line in enumerate(f, 1):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                try:
+                    record = json.loads(stripped)
+                except Exception as e:
+                    errors.append(f"Line {line_no}: JSON parse error: {e}")
+                    continue
+
+                rec_errors = validate_record(record, schema)
+                for err in rec_errors:
+                    rec_id = record.get("trajectory_id", f"line_{line_no}")
+                    errors.append(f"[{rec_id}] {err}")
+
+        print(f"{filepath.name}: {len(errors)} error(s)")
+        if errors:
+            total_error_count += len(errors)
+            for err in errors[:3]:
+                print(f"   - {err}")
+
+    return 1 if total_error_count > 0 else 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
